@@ -28,25 +28,34 @@ class OMXPlayer(object):
         
         self.video = dict()
         self.audio = dict()
-        # Get file properties
-        file_props = self._FILEPROP_REXP.match(self._process.readline()).groups()
-        (self.audio['streams'], self.video['streams'],
-         self.chapters, self.subtitles) = [int(x) for x in file_props]
-        # Get video properties
-        video_props = self._VIDEOPROP_REXP.match(self._process.readline()).groups()
-        self.video['decoder'] = video_props[0]
-        self.video['dimensions'] = tuple(int(x) for x in video_props[1:3])
-        self.video['profile'] = int(video_props[3])
-        self.video['fps'] = float(video_props[4])
-        # Get audio properties
-        audio_props = self._AUDIOPROP_REXP.match(self._process.readline()).groups()
-        self.audio['decoder'] = audio_props[0]
-        (self.audio['channels'], self.audio['rate'],
-         self.audio['bps']) = [int(x) for x in audio_props[1:]]
 
-        if self.audio['streams'] > 0:
-            self.current_audio_stream = 1
-            self.current_volume = 0.0
+        # This lib crashes ocasionally when attempting to read OMXPlayer's output
+        # Since I am not really interested in the file properties, I am adding a try catch block in order to ensure the program doesn't crash
+        try:
+            # Get file properties
+            file_props = self._FILEPROP_REXP.match(self._process.readline()).groups()
+            (self.audio['streams'], self.video['streams'],
+             self.chapters, self.subtitles) = [int(x) for x in file_props]
+
+            # Get video properties
+            video_props = self._VIDEOPROP_REXP.match(self._process.readline()).groups()
+            self.video['decoder'] = video_props[0]
+            self.video['dimensions'] = tuple(int(x) for x in video_props[1:3])
+            self.video['profile'] = int(video_props[3])
+            self.video['fps'] = float(video_props[4])
+
+            # Get audio properties
+            audio_props = self._AUDIOPROP_REXP.match(self._process.readline()).groups()
+            self.audio['decoder'] = audio_props[0]
+            (self.audio['channels'], self.audio['rate'],
+             self.audio['bps']) = [int(x) for x in audio_props[1:]]
+
+            if self.audio['streams'] > 0:
+                self.current_audio_stream = 1
+                self.current_volume = 0.0
+
+        except Exception as e:
+            print("Error: %s" % e)
 
         self._position_thread = Thread(target=self._get_position)
         self._position_thread.start()
